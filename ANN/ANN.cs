@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 public class ANN{
 
@@ -246,6 +247,8 @@ public class ANN{
 
 	}
 
+    #region Activation functions
+
     /// <summary>
     /// Neural network activation function.
     /// https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6
@@ -253,7 +256,7 @@ public class ANN{
     /// <param name="input">The input to the activation function.</param>
     /// <param name="type">The type of activation function.</param>
     /// <returns>The output of the activation function.</returns>
-	private double ActivationFunction(double input, ActivationFunctionTypes type)
+    private double ActivationFunction(double input, ActivationFunctionTypes type)
     {
         switch (type)
         {
@@ -360,4 +363,30 @@ public class ANN{
     	double k = (double) System.Math.Exp(input);
     	return k / (1.0f + k);
 	}
+
+    #endregion
+
+    #region File management
+
+    public void SaveWeightsToFile()
+    {
+        string path = Application.dataPath + "/weights.txt";
+        StreamWriter wf = File.CreateText(path);
+        wf.WriteLine(PrintWeights());
+        wf.Close();
+    }
+
+    public void LoadWeightsFromFile()
+    {
+        string path = Application.dataPath + "/weights.txt";
+        StreamReader wf = File.OpenText(path);
+
+        if (File.Exists(path))
+        {
+            string line = wf.ReadLine();
+            LoadWeights(line);
+        }
+    }
+
+    #endregion
 }

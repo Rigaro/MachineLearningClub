@@ -2080,58 +2080,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1235415990
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1235415991}
-  - component: {fileID: 1235415992}
-  m_Layer: 0
-  m_Name: PopulationManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1235415991
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1235415990}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.088, y: 0.136, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1235415992
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1235415990}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f56f0beeb2e469347b260005e378fe50, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  birdPrefabs:
-  - {fileID: 3695183779611685740, guid: 98521112316e2874096cdc415532a0c0, type: 3}
-  - {fileID: 8406864644562311761, guid: 987d59578f7e01d4ead34cc9ce5e078c, type: 3}
-  - {fileID: 6402835763102675532, guid: c593ad83090e529418ec2bb1dc0631d4, type: 3}
-  - {fileID: 2093487536302177559, guid: 6db0e24b54ac5904e8c87ffd09fcd0cf, type: 3}
-  - {fileID: 6265113996995436578, guid: 4b12d2e955058e847af30a889f958d5e, type: 3}
-  - {fileID: 2704422217497566567, guid: a0ed8da3166f03248af2bf8489562a00, type: 3}
-  populationSize: 100
-  trialTime: 15
 --- !u!1 &1263765999
 GameObject:
   m_ObjectHideFlags: 0
