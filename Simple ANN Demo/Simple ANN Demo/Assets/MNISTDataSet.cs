@@ -9,33 +9,35 @@ using System.IO;
 /// </summary>
 public class MNISTDataSet : MonoBehaviour
 {
-    public float[] values; // The active values
+    public double[] values; // The active values
     public int label; // The active label
-    public int[] desiredOutput; // The active desiredOutput
+    public double[] desiredOutput; // The active desiredOutput
 
-    private float[][] trainingValues; // Extracted image pixel data
-    private float[] trainingLabels; // Labels
-    private float[][] testValues;
-    private float[] testLabels;
+    private double[][] trainingValues; // Extracted image pixel data
+    private double[] trainingLabels; // Labels
+    private double[][] testValues;
+    private double[] testLabels;
     private Texture2D texture;
 
 
     // Start is called before the first frame update
     void Start()
     {
-        trainingLabels = new float[60000];
-        trainingValues = new float[60000][];
+        values = new double[28 * 28];
 
-        testLabels = new float[10000];
-        testValues = new float[10000][];
+        trainingLabels = new double[60000];
+        trainingValues = new double[60000][];
 
-        desiredOutput = new int[10];
+        testLabels = new double[10000];
+        testValues = new double[10000][];
+
+        desiredOutput = new double[10];
 
         for (int v = 0; v < trainingValues.Length; v++) // initialise training array
-            trainingValues[v] = new float[28 * 28];
+            trainingValues[v] = new double[28 * 28];
 
         for (int v = 0; v < testValues.Length; v++) // initialise test array
-            testValues[v] = new float[28 * 28];
+            testValues[v] = new double[28 * 28];
 
         LoadTrainingData("train-labels.idx1-ubyte", "train-images.idx3-ubyte");
         LoadTestData("t10k-labels.idx1-ubyte", "t10k-images.idx3-ubyte");
@@ -44,7 +46,7 @@ public class MNISTDataSet : MonoBehaviour
         texture = new Texture2D(28, 28);
         GetComponent<SpriteRenderer>().material.mainTexture = texture;
 
-        SetActiveData(100, true);
+       SetActiveData(1000, true);
     }
 
     /// <summary>
@@ -56,8 +58,15 @@ public class MNISTDataSet : MonoBehaviour
     {
         if(isTraining)
         {
-            values = trainingValues[number-1];
-            label = (int)trainingLabels[number-1];
+            values = trainingValues[number - 1];
+            label = (int)trainingLabels[number - 1];
+            UpdateDesiredOutput();
+            UpdateTexture();
+        }
+        else
+        {
+            values = testValues[number - 1];
+            label = (int)testLabels[number - 1];
             UpdateDesiredOutput();
             UpdateTexture();
         }
@@ -86,7 +95,7 @@ public class MNISTDataSet : MonoBehaviour
         {
             for (int y = 0; y < 28; y++)
             {
-                float pixelValue = values[(28 * x) + y];
+                float pixelValue = (float)values[(28 * x) + y];
                 texture.SetPixel(x, y,new Color(pixelValue, pixelValue, pixelValue));
             }
         }
