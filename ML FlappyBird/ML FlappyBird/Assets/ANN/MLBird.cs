@@ -111,7 +111,7 @@ public class MLBird : MonoBehaviour
 
         // Speed up simulation when training
         if (_training)
-            Time.timeScale = 10.0f;
+            Time.timeScale = 15.0f;
     }
 
     // Debug GUI
@@ -181,7 +181,7 @@ public class MLBird : MonoBehaviour
                 states.AddRange(sensorManager.GetSensorData());
             }
             //Debug.Log(states[0] + ", " + states[1] + ", " + states[2] + ", " + states[3] + ", " + states[4]);
-            see = (ISee)((int)states[4] + 1);
+            see = (ISee)((int)states[6] + 1);
 
             // Q data
             qValues = SoftMax(_ann.CalculateOutput(states)); // use SoftMax to format the ANN output
@@ -239,8 +239,8 @@ public class MLBird : MonoBehaviour
                 rb2d.velocity = Vector2.zero;
                 //	new Vector2(rb2d.velocity.x, 0);
                 //..giving the bird some upward force.
-                //rb2d.AddForce(new Vector2(0, upForce));
-                rb2d.AddForce(new Vector2(0, upForce * (float)qs[maxQIndex]));
+                rb2d.AddForce(new Vector2(0, upForce));
+                //rb2d.AddForce(new Vector2(0, upForce * (float)qs[maxQIndex]));
                 StartCoroutine(ResetFlap());
             }
             // Choose to flap
