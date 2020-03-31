@@ -11,27 +11,30 @@ import numpy as np
 class NeuralNetwork:
     neuron_types = ['sigmoid', 'tanh', 'relu', 'leakyrelu']
     
-    def __init__(self, input_num, layer_num, hidden_neuron_num, hidden_type, output_num, output_type):
+    def __init__(self, input_num, hidden_layer_num, hidden_neuron_num, hidden_type, output_num, output_type):
         # Create the input layer by assigning random weights and biases
         self.input_layer = [self.create_neuron(input_num) for i in range(input_num)]
         
         # Create all the hidden layers with random weights and biases
         self.hidden_layers = []
-        for hl in range(layer_num):
+        for hl in range(hidden_layer_num):
             if hl == 0: # First hidden layer
                 self.hidden_layers.append([self.create_neuron(input_num) for i in range(hidden_neuron_num)])
             else: # All the other layers
                 self.hidden_layers.append([self.create_neuron(hidden_neuron_num) for i in range(hidden_neuron_num)])
         
         # Create the output layer
-        if layer_num > 0:
+        if hidden_layer_num > 0:
             self.output_layer = [self.create_neuron(hidden_neuron_num) for i in range(output_num)]
         else:
             self.output_layer = [self.create_neuron(input_num) for i in range(output_num)]
         
-        # Create layer output array and layer potentials
-        self.outputs = []
-        self.potentials = []
+        # Create variable to hold computations.
+        self.activations = [] # Neuron outputs
+        self.potentials = [] # Weighted sums
+        self.errors = []
+        self.delta_w = []
+        self.delta_b = []
         
         # Define neuron types
         self.hidden_type = hidden_type.lower()
@@ -64,7 +67,7 @@ class NeuralNetwork:
             x = inputs
         else:
             x = np.array(inputs)
-        return activation_type, np.dot(w, x) + b
+        return np.dot(w, x) + b
     
     def layer_potential(self, layer, inputs):
         # Computes the activation of a given layer
@@ -122,24 +125,30 @@ class NeuralNetwork:
     def forward_propagation(self, nn_inputs):
         # Compute the output for each layer
         
+        # Conver inputs to np.array
+        if type(nn_inputs) is not np.ndarray:
+            nn_inputs = np.array(nn_inputs)
+        
         # Clear arrays
-        self.outputs = []
+        self.activations = []
         self.potentials = []
         
         # Input layer
-        self.outputs.append(self.evaluate_layer(self.input_layer, nn_inputs, self.hidden_type))
-        self.outputs.append(self.layer_potential(self.input_layer, nn_inputs))
+        self.activations.append(self.evaluate_layer(self.input_layer, nn_inputs, self.hidden_type))
+        self.potentials.append(self.layer_potential(self.input_layer, nn_inputs))
         
         # Hidden layers: get each layer out and use the previous
         # layer output to calculate its output
         if len(self.hidden_layers) > 0:
-            [self.outputs.append(self.evaluate_layer(layer, self.outputs[-1], self.hidden_type)) for layer in self.hidden_layers]
+            [self.activations.append(self.evaluate_layer(layer, self.activations[-1], self.hidden_type)) for layer in self.hidden_layers]
+            [self.potentials.append(self.layer_potential(layer, self.potentials[-1])) for layer in self.hidden_layers]
         
         # Output layer
-        self.outputs.append(self.evaluate_layer(self.output_layer, self.outputs[-1], self.output_type))       
+        self.activations.append(self.evaluate_layer(self.output_layer, self.activations[-1], self.output_type))    
+        self.potentials.append(self.layer_potential(self.output_layer, self.potentials[-1]))      
         
         # Return only the activation of the last layer (i.e. the result)
-        return self.outputs[-1]
+        return self.activations[-1]
     
     
     def neuron_diff_transfer(self, activation_type, a):
@@ -174,5 +183,150 @@ class NeuralNetwork:
         # Not available
         else:
             raise Exception('Activation function not available.')
+            
     
-    
+    def backward_propagation(self, nn_inputs, target_outputs):
+        # Performs the backwards propagation algorithm with the given inputs
+        # and target outputs to calculate errors and gradients in the network.
+        
+        # Conver parameters to np.array
+        if type(nn_inputs) is not np.ndarray:
+            nn_inputs = np.array(nn_inputs)
+        if type(target_outputs) is not np.ndarray:
+            target_outputs = np.array(target_outputs)
+            
+        # Initialise variables
+        self.errors = []
+        self.delta_w = []
+        self.delta_b = []
+        
+        ##################################
+        # Step 1: Forward pass.
+        # Perform forward propagation to obtain all the neuron
+        # potentials and activations.
+        self.forward_propagation(nn_inputs)
+        
+        ##################################
+        # Step 2: Output layer.
+        L = -1
+        
+        # Compute the error
+        y_tilde = self.activations[L] - target_outputs
+        self.errors.append(np.multiply(y_tilde, self.neuron_diff_transfer(self.output_type, self.potentials[L])))
+        
+        # Compute the gradients
+        w_grad = np.multiply(self.activations[L-1], self.errors[L]) # grad^L = a^(L-1)*diff_sigma(error)
+        self.delta_w.append(w_grad)
+        self.delta_b.append(self.errors[L])        
+        
+        ##################################
+        # Step 3: Hidden layers
+        # Compute the error and gradient for the hidden layers
+        if len(self.hidden_layers) > 0:
+            # Loop backwards through all layers
+            for l in range(-2, -len(self.hidden_layers) - 2):
+                # create weights matrix
+                if l == -2: # output layer case
+                    weights = np.vstack([neuron['weights'] for neuron in self.output_layer])
+                else:
+                    weights = np.vstack([neuron['weights'] for neuron in self.hidden_layers[l+1]]) # Pick the right index backwards
+                    
+                # Calculate errors
+                a_tilde = np.matmul(np.transpose(weights), self.errors[l+1]) # Proportional error propagation
+                self.errors.insert(0, np.multiply(a_tilde, self.neuron_diff_transfer(self.hidden_type, self.potentials[l])))
+                
+                # Calculate gradients
+                w_grad = np.multiply(self.activations[l-1], self.errors[l])
+                self.delta_w.insert(0, w_grad)
+                self.delta_b.insert(0, self.errors[l])
+                
+        ##################################
+        # Step 4: Input layer
+        # Select the right weight matrix
+        if len(self.hidden_layers) == 0: # Take output layer when no hidden
+            weights = np.vstack([neuron['weights'] for neuron in self.output_layer])
+        else: # The first of the hidden otherwise
+            weights = np.vstack([neuron['weights'] for neuron in self.hidden_layers[0]]) 
+                        
+        # Calculate errors
+        a_tilde = np.matmul(np.transpose(weights), self.errors[0]) # The first error
+        self.errors.insert(0, np.multiply(a_tilde, self.neuron_diff_transfer(self.hidden_type, self.potentials[0])))
+        
+        # Calculate gradients
+        w_grad = np.multiply(nn_inputs, self.errors[0]) # The activation is given by the inputs
+        self.delta_w.insert(0, w_grad)
+        self.delta_b.insert(0, self.errors[0])
+        
+        
+    def update_network(self, learning_rate, nn_inputs, target_outputs):
+        # Updates the network's weights and biases using gradient descent.
+        
+        ##################################
+        # Step 1: Get gradients
+        self.backward_propagation(nn_inputs, target_outputs)
+        
+        
+        ##################################
+        # Step 2: Input layer
+        # Extract the weights and biases from the layer
+        weights = np.vstack([neuron['weights'] for neuron in self.input_layer])
+        biases = np.array([neuron['bias'] for neuron in self.input_layer])
+        
+        # Update weights
+        weights = weights - learning_rate*self.delta_w[0]
+        biases = biases - learning_rate*self.delta_b[0]
+        
+        # Store weights and biases
+        self.set_layer_weights(weights, self.input_layer)
+        self.set_layer_biases(biases, self.input_layer)
+        
+        
+        ##################################
+        # Step 3: Hidden layers
+        if len(self.hidden_layers) > 0:
+            # Extract the weights and biases from each layer
+            l = 1
+            for layer in self.hidden_layers:
+                weights = np.vstack([neuron['weights'] for neuron in layer])
+                biases = np.array([neuron['bias'] for neuron in layer])
+                
+                # Update weights
+                weights = weights - learning_rate*self.delta_w[l]
+                biases = biases - learning_rate*self.delta_b[l]
+                
+                # Store weights and biases
+                self.set_layer_weights(weights, layer)
+                self.set_layer_biases(biases, layer)
+                
+        
+        ##################################
+        # Step 2: Output layer
+        # Extract the weights and biases from the layer
+        weights = np.vstack([neuron['weights'] for neuron in self.output_layer])
+        biases = np.array([neuron['bias'] for neuron in self.output_layer])
+        
+        # Update weights
+        weights = weights - learning_rate*self.delta_w[-1]
+        biases = biases - learning_rate*self.delta_b[-1]
+        
+        # Store weights and biases
+        self.set_layer_weights(weights, self.output_layer)
+        self.set_layer_biases(biases, self.output_layer)
+        
+        
+    def set_layer_weights(self, weights, layer):
+        # Sets the weights of the given layer.
+        n = 0
+        for neuron in layer:
+            neuron['weights'] = weights[n]
+            n = n + 1
+                       
+        
+    def set_layer_biases(self, biases, layer):
+        # Sets the weights of the given layer.
+        n = 0
+        for neuron in layer:
+            neuron['bias'] = biases[n]
+            n = n + 1
+            
+        
