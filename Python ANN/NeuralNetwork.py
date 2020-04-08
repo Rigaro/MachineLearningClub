@@ -10,6 +10,10 @@ from random import randint
 import numpy as np
 import json
 
+# Easy metrics
+from sklearn.metrics import log_loss
+from sklearn.metrics import accuracy_score
+
 class NeuralNetwork:
     neuron_types = ['sigmoid', 'tanh', 'relu', 'leakyrelu']
     
@@ -249,7 +253,7 @@ class NeuralNetwork:
     def estimate(self, inputs):
         return self.forward_propagation(inputs)
     
-    def train(self, inputs, targets, learning_rate, epochs, batch_size=1):
+    def train(self, inputs, targets, learning_rate, epochs, batch_size=1, iterations=1):
         # Trains a network with the given training data arrays, number
         # of epochs and batch size
         
@@ -267,17 +271,37 @@ class NeuralNetwork:
             num_batches = int(data_size/batch_size)
             # Loop through the batches
             for b in range(num_batches):
-                batch_indexes = [randint(0, len(inputs) - 1) for n in range(batch_size)]
-                for i in range(len(batch_indexes)):
-                    # Pick a random point from the dataset
-                    x = inputs[batch_indexes[i]]
-                    y_d = targets[batch_indexes[i]]
-                    
-                    # Update network
-                    self.update_network(learning_rate, x, y_d)
-                    
-                    # Calculate sqe
-                    sqe = np.power(np.array(self.activations[-1]) - y_d , 2)
+                sqe = []
+                ls = []
+                acc = []
+                # Pick the indeces of the training samples randomly
+                batch_indeces = [randint(0, len(inputs)-1) for n in range(batch_size)]
+                # Repeat for as many iterations
+                for i in range(iterations):
+                    # Loop through all the indeces in the batch
+                    for d in range(len(batch_indeces)):
+                        # Pick a random point from the dataset
+                        x = inputs[batch_indeces[d]]
+                        y_d = targets[batch_indeces[d]]
+                        
+                        # Update network
+                        self.update_network(learning_rate, x, y_d)
+                        
+                        # Get predicted values
+                        y_p = np.array(self.activations[-1])
+                        
+                        # Calculate metrics
+                        sqe.append(np.mean(np.power(y_p - y_d , 2))) # Mean square error
+                        ls.append(log_loss(y_d, y_p)) # Log-loss
+                        acc.append(accuracy_score(y_d, y_p.round())) # Accuracy
+                
+                # Get the mean of the metrics
+                msqe = np.mean(sqe)
+                mls = np.mean(ls)
+                macc = 100*np.mean(acc)
+                
+                # Show statistics
+                print("Epoch {}/{}. Batch {}/{}. MSQE: {:.5f}, Log-Loss: {:.5f}, Accuracy: {:.1f}%".format(e+1, epochs, b+1, num_batches, msqe, mls, macc))
                 
         return sqe
         
