@@ -197,16 +197,26 @@ class DenseNeuralNetwork:
             
         return Z
     
-    def cost(self, Y, cost_type):
+    def cost(self, Y, cost_type, lambd=0):
         # Get samples and reshape Y
         m = Y.shape[1]
         #Y = Y.reshape(self.A[-1].shape)
         
+        # Calculate the frobenious norm of the weight matrices when required
+        W_norm = 0
+        JW = 0
+        if lambd > 0:
+            for layer in self.layers:
+                W = layer['W']
+                W_norm += np.linalg.norm(W, 'fro')
+            
+            JW = lambd*(W_norm)/(2*m)                
+        
         # Calculate cost
         if cost_type == 'square_error':
-            return np.sum(np.power(self.A[-1] - Y, 2), axis=1, keepdims=True)/m
+            return np.sum(np.power(self.A[-1] - Y, 2), axis=1, keepdims=True)/m + JW
         elif cost_type == 'log_loss':
-            ls = - np.sum(np.multiply(np.log(self.A[-1]),Y) + np.multiply(np.log(1 - self.A[-1]),(1 - Y)))/m
+            ls = - np.sum(np.multiply(np.log(self.A[-1]),Y) + np.multiply(np.log(1 - self.A[-1]),(1 - Y)))/m  + JW
             return np.squeeze(ls)
         elif cost_type == 'accuracy':
             acc = np.sum(np.where((np.argmax(self.A[-1], axis=0) - np.argmax(Y, axis=0)) == 0, 1, 0))/m
@@ -352,15 +362,15 @@ class DenseNeuralNetwork:
             self.estimate(X)
             
             # Get cost
-            self.costs.append(self.cost(Y, self.cost_type))
+            self.costs.append(self.cost(Y, self.cost_type, lambd))
             
             if self.network_type == 'classification':
                 # Calculate metrics
-                ls.append(self.cost(Y, 'log_loss')) # Log-loss
+                ls.append(self.cost(Y, 'log_loss', lambd)) # Log-loss
                 acc.append(100*(self.cost(Y, 'accuracy'))) # Accuracy
                 if evaluate:
                     self.estimate(X_test)
-                    eval_ls.append(self.cost(Y_test, 'log_loss')) # Log-loss
+                    eval_ls.append(self.cost(Y_test, 'log_loss', lambd)) # Log-loss
                     eval_acc.append(100*(self.cost(Y_test, 'accuracy'))) # Accuracy
             else:
                 raise Exception('Network type not available.')
