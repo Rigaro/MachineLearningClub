@@ -5,14 +5,20 @@ Created on Fri Mar 27 09:28:32 2020
 @author: ricardog
 """
 
+# Random num generator
 from random import uniform
 from random import randint
+
+# Useful libraries
 import numpy as np
 import json
 
 # Easy metrics
 from sklearn.metrics import log_loss
 from sklearn.metrics import accuracy_score
+
+# Timing stuff
+from timeit import default_timer as timer
 
 class NeuralNetwork:
     neuron_types = ['sigmoid', 'tanh', 'relu', 'leakyrelu']
@@ -263,14 +269,18 @@ class NeuralNetwork:
         if batch_size < 1:
             raise Exception('The batch size should be greater than 0.')
             
+        training_start_time = timer()
+            
         # Loop through epochs and batches
         for e in range(epochs):
+            epoch_start_time = timer()
             sqe = 0
             # Generate batch
             data_size = len(inputs)
             num_batches = int(data_size/batch_size)
             # Loop through the batches
             for b in range(num_batches):
+                batch_start_time = timer()
                 sqe = []
                 ls = []
                 acc = []
@@ -300,8 +310,24 @@ class NeuralNetwork:
                 mls = np.mean(ls)
                 macc = 100*np.mean(acc)
                 
-                # Show statistics
-                print("Epoch {}/{}. Batch {}/{}. MSQE: {:.5f}, Log-Loss: {:.5f}, Accuracy: {:.1f}%".format(e+1, epochs, b+1, num_batches, msqe, mls, macc))
+                # Get elapsed time for the batch
+                time = timer()
+                batch_time = time - batch_start_time
                 
+                # Show statistics
+                print("Epoch {}/{}. Batch {}/{}. MSQE: {:.5f}, Log-Loss: {:.5f}, Accuracy: {:.1f}%. Time elapsed: {:.4} seconds.".format(e+1, epochs, b+1, num_batches, msqe, mls, macc, batch_time))
+                
+            # Get the elapsed time for the epoch
+            time = timer()
+            epoch_time = time - training_start_time
+        
+            print("Epoch elapsed time: {:.4} seconds.".format(epoch_time))
+            
+        # Get the total training time
+        time = timer()
+        training_time = time - epoch_start_time
+    
+        print("Training time: {:.4} seconds".format(training_time))
+        
         return sqe
         
