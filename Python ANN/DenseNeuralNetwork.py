@@ -59,9 +59,25 @@ class DenseNeuralNetwork:
                 b  = np.zeros((layer['neurons'], 1)) # There are as many biases as there are neurons in the layer
                 # Create weights
                 if l == 0 : # First layer has as many connections as neurons
-                    W  = np.random.randn(layer['neurons'], layer['inputs'])*0.01
+                    # Set the weight variance
+                    if layer['type'] == 'sigmoid':
+                        w_var = np.sqrt(1/layer['inputs'])
+                    elif layer['type'] == 'tanh':
+                        w_var = np.sqrt(6/(layer['neurons']+layer['inputs']))
+                    else:
+                        w_var = w_var = np.sqrt(2/layer['inputs'])
+                    # Initialise weights
+                    W  = np.random.randn(layer['neurons'], layer['inputs'])*w_var
                 else: # All the other layers have as many connections as the previous layer (i.e. the last to be added)
-                    W  = np.random.randn(layer['neurons'], layer_prev['neurons'])*0.01
+                    # Set the weight variance
+                    if layer['type'] == 'sigmoid':
+                        w_var = np.sqrt(1/layer_prev['neurons'])
+                    elif layer['type'] == 'tanh':
+                        w_var = np.sqrt(6/(layer['neurons']+layer_prev['neurons']))
+                    else:
+                        w_var = w_var = np.sqrt(2/layer_prev['neurons'])
+                    # Initialise weights
+                    W  = np.random.randn(layer['neurons'], layer_prev['neurons'])*w_var
                 
                 # Add weights and biases to layer
                 self.layers.append({'W':W, 'b':b, 'type':layer['type']})

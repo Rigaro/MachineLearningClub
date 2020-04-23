@@ -51,7 +51,7 @@ ns = [{'inputs':400, 'neurons':50, 'type':'relu'},
 digit_dnn = DenseNeuralNetwork(ns, 'classification')
 
 # Train
-costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.95, epochs=2000, lambd=0, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
+costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.5, epochs=2000, lambd=0.01, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
 
 # Test set
 digit_dnn.estimate(x_test_np)
