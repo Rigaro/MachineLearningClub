@@ -45,13 +45,16 @@ x_test_np = np.array(x_test).T
 y_test_np = np.array(y_test).T
 
 # Generate network
-ns = [{'inputs':400, 'neurons':50, 'type':'relu'},
-      {'neurons':25, 'type':'sigmoid'},
+ns = [{'inputs':400, 'neurons':25, 'type':'relu'},
+      #{'neurons':25, 'type':'sigmoid'},
       {'neurons':10, 'type':'sigmoid'}]
 digit_dnn = DenseNeuralNetwork(ns, 'classification')
 
 # Train
-costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.5, epochs=2000, lambd=0.01, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
+# Mini-batch
+costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.1, epochs=100, optimiser='mini_batch', lambd=0.1, batch_size=64, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
+# Momentum
+#costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.1, epochs=100, optimiser='momentum', lambd=0.1, batch_size=64, beta=0.9, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
 
 # Test set
 digit_dnn.estimate(x_test_np)

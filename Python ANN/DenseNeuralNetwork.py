@@ -19,7 +19,7 @@ import time
 class DenseNeuralNetwork:
     neuron_types = ['sigmoid', 'tanh', 'relu', 'leakyrelu']
     network_types = ['regression', 'classification']
-    optimisers = ['gradient_descent', 'mini_batch']
+    optimisers = ['gradient_descent', 'mini_batch', 'momentum']
     
     def __init__(self, network_structure, network_type, file_name="", load_path=""):
         # Creates a neural network with the given network structure
@@ -39,6 +39,8 @@ class DenseNeuralNetwork:
         self.dW = []
         self.db = []
         self.cost_type = ''
+        self.VdW_prev = []
+        self.Vdb_prev = []
         
         # Analysis buffers
         self.costs = []
@@ -56,7 +58,10 @@ class DenseNeuralNetwork:
             layer_prev = None
             for layer in network_structure:
                 # Create biases
-                b  = np.zeros((layer['neurons'], 1)) # There are as many biases as there are neurons in the layer
+                b  = np.zeros((layer['neurons'], 1)) # There are as many biases as there are neurons in the layer    
+                # Initialise the momentum terms
+                self.Vdb_prev.append(np.zeros((layer['neurons'], 1)))
+                
                 # Create weights
                 if l == 0 : # First layer has as many connections as neurons
                     # Set the weight variance
@@ -67,7 +72,10 @@ class DenseNeuralNetwork:
                     else:
                         w_var = w_var = np.sqrt(2/layer['inputs'])
                     # Initialise weights
-                    W  = np.random.randn(layer['neurons'], layer['inputs'])*w_var
+                    W  = np.random.randn(layer['neurons'], layer['inputs'])*w_var            
+                    # Initialise the momentum terms
+                    self.VdW_prev.append(np.zeros((layer['neurons'], layer['inputs'])))
+                    
                 else: # All the other layers have as many connections as the previous layer (i.e. the last to be added)
                     # Set the weight variance
                     if layer['type'] == 'sigmoid':
@@ -77,7 +85,9 @@ class DenseNeuralNetwork:
                     else:
                         w_var = w_var = np.sqrt(2/layer_prev['neurons'])
                     # Initialise weights
-                    W  = np.random.randn(layer['neurons'], layer_prev['neurons'])*w_var
+                    W  = np.random.randn(layer['neurons'], layer_prev['neurons'])*w_var            
+                    # Initialise the momentum terms
+                    self.VdW_prev.append(np.zeros((layer['neurons'], layer_prev['neurons'])))
                 
                 # Add weights and biases to layer
                 self.layers.append({'W':W, 'b':b, 'type':layer['type']})
@@ -309,7 +319,7 @@ class DenseNeuralNetwork:
             self.dA.insert(0, np.dot(W.T, self.dZ[l])) # Insert dA for previous layer
         
         
-    def update_network(self, X, Y, learning_rate, lambd=0):
+    def update_network(self, X, Y, learning_rate, lambd=0, beta=0):
         # Updates the network's weights and biases using gradient descent.
         
         ##################################
@@ -326,8 +336,18 @@ class DenseNeuralNetwork:
             W = layer['W']
             b = layer['b']
             # Update
-            W -= learning_rate*self.dW[l]
-            b -= learning_rate*self.db[l]
+            # Standard gradient descent
+            if beta == 0:
+                W -= learning_rate*self.dW[l]
+                b -= learning_rate*self.db[l]
+            # Momentum version
+            else:
+                VdW = beta*self.VdW_prev[l] + (1-beta)*self.dW[l]
+                Vdb = beta*self.Vdb_prev[l] + (1-beta)*self.db[l]
+                self.VdW_prev[l] = VdW
+                self.Vdb_prev[l] = Vdb
+                W -= learning_rate*VdW
+                b -= learning_rate*Vdb
             # Set
             layer['W'] = W
             layer['b'] = b
@@ -337,7 +357,7 @@ class DenseNeuralNetwork:
     def estimate(self, X):
         return self.forward_propagation(X)
     
-    def train(self, X, Y, learning_rate, epochs, optimiser='gradient_descent', lambd=0, batch_size=None, evaluate=False, X_test=None, Y_test=None):
+    def train(self, X, Y, learning_rate, epochs, optimiser='gradient_descent', lambd=0, batch_size=None, beta=None, evaluate=False, X_test=None, Y_test=None):
         # Trains a network with the given training data arrays, number
         # of epochs and batch size
         
@@ -349,6 +369,7 @@ class DenseNeuralNetwork:
             raise Exception('The evaluation inputs and targets lists must have the same length.')
             
         training_start_time = time.time()
+        m = Y.shape[1]
         
         # Initialise metrics arrays
         ls = []
@@ -360,17 +381,33 @@ class DenseNeuralNetwork:
         epoch_start_time = time.time()    
         # Loop through epochs and batches
         for e in range(epochs):        
-            
+            # Sttandar gradient descent
             if optimiser == 'gradient_descent':
                 # Update network
                 self.update_network(X, Y, learning_rate)
-            elif optimiser == 'mini_batch':
-                # Repeat for all batches
-                
+            
+            # Mini-batch
+            elif (optimiser == 'mini_batch') & (batch_size >= 1) & (batch_size <= m):
+                batch_num = int(m/batch_size)                
                 # Generate batch
+                X_batches = np.array_split(X, batch_num, axis=1)
+                Y_batches = np.array_split(Y, batch_num, axis=1)
+                # Repeat for all batches
+                for X_t, Y_t in zip(X_batches, Y_batches):
+                    # Update network with batch
+                    self.update_network(X_t, Y_t, learning_rate)
+            
+            # Mini-batch with momentum
+            elif (optimiser == 'momentum') & (beta < 1) & (beta>0) & (batch_size >= 1) & (batch_size <= m):
+                batch_num = int(m/batch_size)                
+                # Generate batch
+                X_batches = np.array_split(X, batch_num, axis=1)
+                Y_batches = np.array_split(Y, batch_num, axis=1)
+                # Repeat for all batches
+                for X_t, Y_t in zip(X_batches, Y_batches):
+                    # Update network with batch and beta
+                    self.update_network(X_t, Y_t, learning_rate, beta=beta)
                 
-                # Update network with bach
-                self.update_network(X, Y, learning_rate)
             else:
                 raise Exception('Optimiser not available.') 
             
