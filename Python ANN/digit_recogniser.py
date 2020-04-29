@@ -52,9 +52,9 @@ digit_dnn = DenseNeuralNetwork(ns, 'classification')
 
 # Train
 # Mini-batch
-costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.1, epochs=100, optimiser='mini_batch', lambd=0.1, batch_size=64, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
+#costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.1, epochs=100, optimiser='mini_batch', lambd=0.1, batch_size=64, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
 # Momentum
-#costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.1, epochs=100, optimiser='momentum', lambd=0.1, batch_size=64, beta=0.9, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
+costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.1, epochs=100, optimiser='momentum', lambd=0.1, batch_size=64, beta=0.9, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
 
 # Test set
 digit_dnn.estimate(x_test_np)

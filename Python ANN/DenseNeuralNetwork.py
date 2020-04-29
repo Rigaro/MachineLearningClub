@@ -39,8 +39,8 @@ class DenseNeuralNetwork:
         self.dW = []
         self.db = []
         self.cost_type = ''
-        self.VdW_prev = []
-        self.Vdb_prev = []
+        self.VdW = []
+        self.Vdb = []
         
         # Analysis buffers
         self.costs = []
@@ -60,7 +60,7 @@ class DenseNeuralNetwork:
                 # Create biases
                 b  = np.zeros((layer['neurons'], 1)) # There are as many biases as there are neurons in the layer    
                 # Initialise the momentum terms
-                self.Vdb_prev.append(np.zeros((layer['neurons'], 1)))
+                self.Vdb.append(np.zeros((layer['neurons'], 1)))
                 
                 # Create weights
                 if l == 0 : # First layer has as many connections as neurons
@@ -74,7 +74,7 @@ class DenseNeuralNetwork:
                     # Initialise weights
                     W  = np.random.randn(layer['neurons'], layer['inputs'])*w_var            
                     # Initialise the momentum terms
-                    self.VdW_prev.append(np.zeros((layer['neurons'], layer['inputs'])))
+                    self.VdW.append(np.zeros((layer['neurons'], layer['inputs'])))
                     
                 else: # All the other layers have as many connections as the previous layer (i.e. the last to be added)
                     # Set the weight variance
@@ -87,7 +87,7 @@ class DenseNeuralNetwork:
                     # Initialise weights
                     W  = np.random.randn(layer['neurons'], layer_prev['neurons'])*w_var            
                     # Initialise the momentum terms
-                    self.VdW_prev.append(np.zeros((layer['neurons'], layer_prev['neurons'])))
+                    self.VdW.append(np.zeros((layer['neurons'], layer_prev['neurons'])))
                 
                 # Add weights and biases to layer
                 self.layers.append({'W':W, 'b':b, 'type':layer['type']})
@@ -342,12 +342,10 @@ class DenseNeuralNetwork:
                 b -= learning_rate*self.db[l]
             # Momentum version
             else:
-                VdW = beta*self.VdW_prev[l] + (1-beta)*self.dW[l]
-                Vdb = beta*self.Vdb_prev[l] + (1-beta)*self.db[l]
-                self.VdW_prev[l] = VdW
-                self.Vdb_prev[l] = Vdb
-                W -= learning_rate*VdW
-                b -= learning_rate*Vdb
+                self.VdW[l] = beta*self.VdW[l] + (1-beta)*self.dW[l]
+                self.Vdb[l] = beta*self.Vdb[l] + (1-beta)*self.db[l]
+                W -= learning_rate*self.VdW[l]
+                b -= learning_rate*self.Vdb[l]
             # Set
             layer['W'] = W
             layer['b'] = b
