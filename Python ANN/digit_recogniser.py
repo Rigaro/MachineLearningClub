@@ -58,7 +58,7 @@ digit_dnn = DenseNeuralNetwork(ns, 'classification')
 # RMSProp
 #costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.075, epochs=100, optimiser='rmsprop', lambd=0.1, batch_size=64, beta_r=0.999, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
 # Adam
-costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.005, epochs=60, optimiser='adam', lambd=0.1, batch_size=64, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
+costs, metrics = digit_dnn.train(x_train_np, y_train_np, learning_rate=0.01, epochs=300, optimiser='adam', lambd=0.1, batch_size=64, decay_rate = 0.05, evaluate=True, X_test=x_test_np, Y_test=y_test_np)
 
 # Test set
 digit_dnn.estimate(x_test_np)

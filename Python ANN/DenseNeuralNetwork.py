@@ -326,7 +326,7 @@ class DenseNeuralNetwork:
             self.dA.insert(0, np.dot(W.T, self.dZ[l])) # Insert dA for previous layer
         
         
-    def update_network(self, X, Y, learning_rate, optimiser='gradient_descent', lambd=0, beta_m=0.9, beta_r=0.999, e=1):
+    def update_network(self, X, Y, learning_rate, optimiser='gradient_descent', lambd=0, beta_m=0.9, beta_r=0.999, e=0):
         # Updates the network's weights and biases using gradient descent.
         
         ##################################
@@ -337,8 +337,10 @@ class DenseNeuralNetwork:
         ##################################
         # Step 2: Update weights and biases in all layers
         #
+        # Initialise
         l = 0
         e += 1
+        # Loop through layers
         for layer in self.layers:
             # Get weights and biases
             W = layer['W']
@@ -386,7 +388,7 @@ class DenseNeuralNetwork:
     def estimate(self, X):
         return self.forward_propagation(X)
     
-    def train(self, X, Y, learning_rate, epochs, optimiser='gradient_descent', lambd=0, batch_size=None, beta_m=0.9, beta_r=0.999, evaluate=False, X_test=None, Y_test=None):
+    def train(self, X, Y, learning_rate, epochs, optimiser='gradient_descent', lambd=0, batch_size=None, beta_m=0.9, beta_r=0.999, decay_rate=0, evaluate=False, X_test=None, Y_test=None):
         # Trains a network with the given training data arrays, number
         # of epochs and batch size
         
@@ -410,10 +412,12 @@ class DenseNeuralNetwork:
         epoch_start_time = time.time()    
         # Loop through epochs and batches
         for e in range(epochs):        
-            # Sttandar gradient descent
+            # Calculate the learning rate            
+            alpha = learning_rate/(1 + (decay_rate*e))
+            # Standard gradient descent
             if optimiser == 'gradient_descent':
                 # Update network
-                self.update_network(X, Y, learning_rate, optimiser='gradient_descent')
+                self.update_network(X, Y, alpha, optimiser='gradient_descent', e=e)
             
             # Mini-batch
             elif (optimiser == 'mini_batch') and (batch_size >= 1) and (batch_size <= m):
@@ -424,7 +428,7 @@ class DenseNeuralNetwork:
                 # Repeat for all batches
                 for X_t, Y_t in zip(X_batches, Y_batches):
                     # Update network with batch
-                    self.update_network(X_t, Y_t, learning_rate, optimiser='mini_batch')
+                    self.update_network(X_t, Y_t, alpha, optimiser='mini_batch', e=e)
             
             # Mini-batch with momentum
             elif (optimiser == 'momentum') and (beta_m < 1) and (beta_m>0) and (batch_size >= 1) and (batch_size <= m):
@@ -435,7 +439,7 @@ class DenseNeuralNetwork:
                 # Repeat for all batches
                 for X_t, Y_t in zip(X_batches, Y_batches):
                     # Update network with batch and beta_m
-                    self.update_network(X_t, Y_t, learning_rate, optimiser='momentum', beta_m=beta_m)                
+                    self.update_network(X_t, Y_t, alpha, optimiser='momentum', beta_m=beta_m, e=e)                
             
             # Mini-batch with RMSprop
             elif (optimiser == 'rmsprop') and (beta_r < 1) and (beta_r>0) and (batch_size >= 1) and (batch_size <= m):
@@ -446,7 +450,7 @@ class DenseNeuralNetwork:
                 # Repeat for all batches
                 for X_t, Y_t in zip(X_batches, Y_batches):
                     # Update network with batch and beta_m
-                    self.update_network(X_t, Y_t, learning_rate, optimiser='rmsprop', beta_r=beta_r)         
+                    self.update_network(X_t, Y_t, alpha, optimiser='rmsprop', beta_r=beta_r, e=e)         
             
             # Mini-batch with Adam
             elif (optimiser == 'adam') and (beta_m < 1) and (beta_m>0) and (beta_r < 1) and (beta_r>0) and (batch_size >= 1) and (batch_size <= m):
@@ -457,7 +461,7 @@ class DenseNeuralNetwork:
                 # Repeat for all batches
                 for X_t, Y_t in zip(X_batches, Y_batches):
                     # Update network with batch and beta_m
-                    self.update_network(X_t, Y_t, learning_rate, optimiser='adam', beta_m=beta_m, beta_r=beta_r, e=e)
+                    self.update_network(X_t, Y_t, alpha, optimiser='adam', beta_m=beta_m, beta_r=beta_r, e=e)
             else:
                 raise Exception('Optimiser not available.') 
             
@@ -488,7 +492,7 @@ class DenseNeuralNetwork:
                 epoch_start_time = time.time()
                     
                 # Show statistics
-                print("Epoch {}/{}. Log-Loss: {:.5f}, Accuracy: {:.1f}%. Elapsed time: {:.4} seconds.".format(e+1, epochs, ls[-1], acc[-1], epoch_time))
+                print("Epoch {}/{}. Log-Loss: {:.5f}, Accuracy: {:.1f}%. Learning rate: {:.5f}. Elapsed time: {:.4} seconds.".format(e+1, epochs, ls[-1], acc[-1], alpha, epoch_time))
                
         
         # Get the elapsed time for the epoch
@@ -496,7 +500,7 @@ class DenseNeuralNetwork:
         epoch_time = current_time - epoch_start_time
             
         # Show statistics
-        print("Epoch {}/{}. Log-Loss: {:.5f}, Accuracy: {:.1f}%. Elapsed time: {:.4} seconds.".format(e+1, epochs, ls[-1], acc[-1], epoch_time))
+        print("Epoch {}/{}. Log-Loss: {:.5f}, Accuracy: {:.1f}%. Learning rate: {:.5f}. Elapsed time: {:.4} seconds.".format(e+1, epochs, ls[-1], acc[-1], alpha, epoch_time))
         
         # Build metrics dictionary
         if self.network_type == 'classification':
